@@ -104,7 +104,7 @@ echo "Setting up wireguard"
 
 # cd into the ./wireguard directory
 cd ./wireguard || exit
-./install.sh
+./install-wg.sh
 
 # Re-enable the needrestart messages
 sed -i "s/\$nrconf{kernelhints} = -1;/#\$nrconf{kernelhints} = -1;/g" /etc/needrestart/needrestart.conf
