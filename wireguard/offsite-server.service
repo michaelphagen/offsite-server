@@ -1,0 +1,13 @@
+[Unit]
+Description=Offsite-Server Remote Management Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/offsite-server /etc/offsite-server/offsite-server.conf
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=offsite-server
+
+[Install]
+WantedBy=multi-user.target

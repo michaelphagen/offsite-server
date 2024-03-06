@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+
+# This script will run via systemd and attempt to connect via wireguard to a home network.
+# If unable to connect but able to reach the broader internet, it will email me to let me know there is an issue.
+# It will also email me once booted to let me know that I can log in and mount the encrypted drive
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import os
+import smtplib
+import sys
+import time
+from dotenv import load_dotenv
+
+
+def printLog(message):
+    # printLog a log message with a timestamp
+    print(time.strftime("%Y-%m-%d %H:%M:%S") + " " + message)
+
+
+def checkConnection(host="8.8.8.8"):
+    # Check that we can reach the internet
+    response = os.system("ping -c 1 " + host)
+    if response == 0:
+        return True
+    else:
+        return False
+
+
+def connectToVPN():
+    # Attempt to connect to the VPN
+    os.system("wg-quick up wg0")
+    time.sleep(10)
+    if checkConnection(os.environ.get("HOME_IP")):
+        return True
+    else:
+        return False
+
+
+def sendEmail(subject, body):
+    # Send an email
+    msg = MIMEMultipart()
+    msg["From"] = os.environ.get("EMAIL_FROM")
+    msg["To"] = os.environ.get("EMAIL_TO")
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+    server = smtplib.SMTP(os.environ.get("EMAIL_SMTP"), os.environ.get("EMAIL_PORT"))
+    if os.environ.get("EMAIL_TLS").lower() == "true":
+        server.starttls()
+    server.login(os.environ.get("EMAIL_USERNAME"), os.environ.get("EMAIL_PASSWORD"))
+    server.sendmail(
+        os.environ.get("EMAIL_FROM"), os.environ.get("EMAIL_TO"), msg.as_string()
+    )
+    server.quit()
+
+
+if __name__ == "__main__":
+    # Load the environment variables from argument file
+    print("Loading environment variables from " + sys.argv[1])
+    load_dotenv(sys.argv[1])
+
+    hostname = os.uname()[1]
+
+    # Main Loop, run every 1 minute
+    while True:
+        if checkConnection(os.environ.get("HOME_IP")):
+            # If we can reach the home network, we are good
+            printLog("Connected to Home Network")
+            # Check if external IP has changed
+            os.system("curl ifconfig.me > /tmp/ip.txt")
+            with open("/tmp/ip.txt", "r") as file:
+                data = file.read().replace("\n", "")
+            os.system("rm /tmp/ip.txt")
+            if data != os.environ.get("EXTERNAL_IP"):
+                os.environ["EXTERNAL_IP"] = data
+                sendEmail(
+                    "Offsite Server: " + hostname,
+                    "External IP of " + hostname + " has changed to " + data + ". The VPN does not seem to have disconnected.",
+                )
+        else:
+            if checkConnection():
+                printLog("Connected to internet, but unable to connect to Home Network")
+                os.system("curl ifconfig.me > /tmp/ip.txt")
+                with open("/tmp/ip.txt", "r") as file:
+                    data = file.read().replace("\n", "")
+                os.system("rm /tmp/ip.txt")
+                os.environ["EXTERNAL_IP"] = data
+                if connectToVPN():
+                    printLog("VPN is now reconnected")
+                    sendEmail(
+                        "Offsite Server: " + hostname,
+                        hostname
+                        + " was unable to reach " + os.environ.get("HOME_IP") +", but could reach the internet.\nVPN has been reconnected.\n\nExternal IP: " + data,
+                    )
+                    # break
+                else:
+                    # If we can reach the internet but not the home network, wait and try again
+                    printLog("Could not connect to VPN")
+                    sendEmail(
+                        "Offsite Server: " + hostname,
+                        hostname
+                        + " was unable to reach " + os.environ.get("HOME_IP") +", but could reach the internet.\nVPN could not be reconnected.\n\nExternal IP: " + data,
+                    )
+
+            else:
+                # If we can't reach the internet, wait and try again
+                printLog("No internet connection!")
+        time.sleep(60)
