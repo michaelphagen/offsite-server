@@ -48,8 +48,8 @@ apt-get upgrade -y
 apt-get dist-upgrade -y
 
 # install git, wireguard, zsh, neovim
-echo "Installing git, wireguard zsh, and neovim"
-apt-get install git wireguard openresolv zsh neovim -y
+echo "Installing git, zsh, and neovim"
+apt-get install git openresolv zsh neovim -y
 
 # replace vim with neovim
 echo "Replacing vim with neovim"
@@ -93,6 +93,8 @@ echo "Turning off root ssh login and password authentication"
 sed -i 's/#PermitRootLogin/PermitRootLogin/g; s/#PasswordAuthentication/PasswordAuthentication/g' /etc/ssh/sshd_config
 sed -i 's/PermitRootLogin yes/PermitRootLogin no/g; s/PermitRootLogin prohibit-password/PermitRootLogin no/g' /etc/ssh/sshd_config
 sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
+# If there are other sshd configs, delete them
+rm -rf /etc/ssh/sshd_config.d
 
 
 # restart the ssh service

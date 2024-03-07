@@ -28,6 +28,11 @@ def checkConnection(host="8.8.8.8"):
 
 
 def connectToVPN():
+    # Check if we are already connected to the VPN
+    if os.system("wg show wg0") == 0:
+        #bring the interface down and back up
+        os.system("wg-quick down wg0")
+        time.sleep(5)
     # Attempt to connect to the VPN
     os.system("wg-quick up wg0")
     time.sleep(10)
@@ -71,7 +76,10 @@ if __name__ == "__main__":
             with open("/tmp/ip.txt", "r") as file:
                 data = file.read().replace("\n", "")
             os.system("rm /tmp/ip.txt")
-            if data != os.environ.get("EXTERNAL_IP"):
+            # If the external IP is not an IP
+            if not data.replace(".", "").isdigit():
+                printLog("External IP was seen as " + data + ".")
+            elif data != os.environ.get("EXTERNAL_IP"):
                 os.environ["EXTERNAL_IP"] = data
                 sendEmail(
                     "Offsite Server: " + hostname,

@@ -8,10 +8,11 @@ Basically, [Tailscale](https://tailscale.com/) just for me.
 
 ## Usage
 
-1. Clone the repository or [download the zip](https://github.com/michaelphagen/offsite-server/archive/refs/heads/main.zip)
-2. Fill out the offsite-server.conf file in ./wireguard (see [offsite-server.conf](#offsite-server.conf))
-3. Replace the wg0.conf file in ./wireguard with the a wireguard client configuration file for your wireguard server
-4. Run `./install.sh` to set up offsite server
+1. Set up a new install of ubuntu or ubuntu server
+2. Clone the repository or [download the zip](https://github.com/michaelphagen/offsite-server/archive/refs/heads/main.zip)
+3. Fill out the offsite-server.conf file in ./wireguard (see [offsite-server.conf](#offsite-server.conf))
+4. Replace the wg0.conf file in ./wireguard with the a wireguard client configuration file for your wireguard server
+5. Run `./install.sh` to set up offsite server
 
 
 ## offsite-server.conf
