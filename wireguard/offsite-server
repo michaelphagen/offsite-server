@@ -114,4 +114,10 @@ if __name__ == "__main__":
             else:
                 # If we can't reach the internet, wait and try again
                 printLog("No internet connection!")
+                if os.system("wg show wg0") == 0:
+                    printLog("Bringing down VPN to try reconnecting")
+                    #bring the interface down and back up
+                    os.system("wg-quick down wg0")
+                    time.sleep(5)
+
         time.sleep(60)
