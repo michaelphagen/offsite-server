@@ -13,35 +13,58 @@ import time
 from dotenv import load_dotenv
 
 
-def printLog(message):
-    # printLog a log message with a timestamp
-    print(time.strftime("%Y-%m-%d %H:%M:%S") + " " + message)
-    # Write log to /etc/offsite-server/log.txt
-    with open("/etc/offsite-server/log.txt", "a") as file:
-        file.write(time.strftime("%Y-%m-%d %H:%M:%S") + " " + message + "\n")
+def printLog(message, level=""):
+    willLog=False
+    # If there is no LOG_LEVEL or if LOG_LEVEL is INFO, print everything except debug
+    if not(os.environ.get("LOG_LEVEL")) or os.environ.get("LOG_LEVEL")=="INFO":
+        if level != "DEBUG":
+            willLog=True
+    # If level is WARN, only print WARNINGS
+    elif os.environ.get("LOG_LEVEL")=="WARN":
+        if level == "WARN" or level=="":
+            willLog=True
+    # If Log_Level is debug, print it
+    else:
+        willLog=True
+    
+    if willLog:
+        if level != "":
+            level=level +": "
+        # printLog a log message with a timestamp
+        print(time.strftime("%Y-%m-%d %H:%M:%S") + " " + level + message)
+        # Write log to /etc/offsite-server/log.txt
+        with open("/etc/offsite-server/log.txt", "a") as file:
+            file.write(time.strftime("%Y-%m-%d %H:%M:%S") + " "  + level + message + "\n")
 
 
 def checkConnection(host="8.8.8.8"):
+    printLog("Checking connection to " + host, "DEBUG")
     # Check that we can reach the internet
     response = os.system("ping -c 1 " + host)
     if response == 0:
+        printLog("Connection to " + host + " is up", "DEBUG")
         return True
     else:
+        printLog("Connection to " + host + " is down", "DEBUG")
         return False
 
 
 def connectToVPN():
     # Check if we are already connected to the VPN
     if os.system("wg show wg0") == 0:
+        printLog("VPN was already up, bringing down to reconnect", "DEBUG") 
         #bring the interface down and back up
         os.system("wg-quick down wg0")
         time.sleep(5)
     # Attempt to connect to the VPN
+    printLog("Bringing up wg0", "DEBUG") 
     os.system("wg-quick up wg0")
     time.sleep(10)
     if checkConnection(os.environ.get("HOME_IP")):
+        printLog("VPN is now connected", "DEBUG")
         return True
     else:
+        printLog("VPN was NOT CONNECTED!", "DEBUG")
         return False
 
 
@@ -68,12 +91,12 @@ if __name__ == "__main__":
     load_dotenv(sys.argv[1])
 
     hostname = os.uname()[1]
-
+    printLog("Starting offsite-server!")
     # Main Loop, run every 1 minute
     while True:
         if checkConnection(os.environ.get("HOME_IP")):
             # If we can reach the home network, we are good
-            printLog("Connected to Home Network")
+            printLog("Conection up")
             # Check if external IP has changed
             os.system("curl ifconfig.me > /tmp/ip.txt")
             with open("/tmp/ip.txt", "r") as file:
@@ -81,43 +104,46 @@ if __name__ == "__main__":
             os.system("rm /tmp/ip.txt")                
             if data != os.environ.get("EXTERNAL_IP") and data.replace(".", "").isdigit():
                 os.environ["EXTERNAL_IP"] = data
-                printLog("External IP was seen as " + data + ".")
+                printLog("External IP was seen as " + data + ".", "INFO")
                 sendEmail(
                     "Offsite Server: " + hostname,
                     "External IP of " + hostname + " has changed to " + data + ". The VPN does not seem to have disconnected.",
                 )
         else:
             if checkConnection():
-                printLog("Connected to internet, but unable to connect to Home Network")
-                os.system("curl ifconfig.me > /tmp/ip.txt")
-                with open("/tmp/ip.txt", "r") as file:
-                    data = file.read().replace("\n", "")
-                os.system("rm /tmp/ip.txt")
-                os.environ["EXTERNAL_IP"] = data
-                if connectToVPN():
-                    printLog("VPN is now reconnected with external IP: " + data)
-                    sendEmail(
-                        "Offsite Server: " + hostname,
-                        hostname
-                        + " was unable to reach " + os.environ.get("HOME_IP") +", but could reach the internet.\nVPN has been reconnected.\n\nExternal IP: " + data,
-                    )
-                    # break
-                else:
-                    # If we can reach the internet but not the home network, wait and try again
-                    printLog("Could not connect to VPN. External IP: " + data)
-                    sendEmail(
-                        "Offsite Server: " + hostname,
-                        hostname
-                        + " was unable to reach " + os.environ.get("HOME_IP") +", but could reach the internet.\nVPN could not be reconnected.\n\nExternal IP: " + data,
-                    )
-
+                # Wait 30 seconds, then confirm we really can't reach the home network
+                printLog("Waiting 30 seconds to confirm no connection to home network", "DEBUG")
+                time.sleep(30)
+                if not checkConnection(os.environ.get("HOME_IP")):
+                    printLog("Still unable to connect to home network", "DEBUG")
+                    printLog("Connected to internet, but unable to connect to Home Network", "INFO")
+                    os.system("curl ifconfig.me > /tmp/ip.txt")
+                    with open("/tmp/ip.txt", "r") as file:
+                        data = file.read().replace("\n", "")
+                    os.system("rm /tmp/ip.txt")
+                    os.environ["EXTERNAL_IP"] = data
+                    if connectToVPN():
+                        printLog("VPN is now reconnected with external IP: " + data, "INFO")
+                        sendEmail(
+                            "Offsite Server: " + hostname,
+                            hostname
+                            + " was unable to reach " + os.environ.get("HOME_IP") +", but could reach the internet.\nVPN has been reconnected.\n\nExternal IP: " + data,
+                        )
+                        # break
+                    else:
+                        # If we can reach the internet but not the home network, wait and try again
+                        printLog("Could not connect to VPN. External IP: " + data, "INFO")
+                        sendEmail(
+                            "Offsite Server: " + hostname,
+                            hostname
+                            + " was unable to reach " + os.environ.get("HOME_IP") +", but could reach the internet.\nVPN could not be reconnected.\n\nExternal IP: " + data,
+                        )
             else:
                 # If we can't reach the internet, wait and try again
-                printLog("No internet connection!")
+                printLog("No internet connection!", "WARN")
                 if os.system("wg show wg0") == 0:
-                    printLog("Bringing down VPN to try reconnecting")
+                    printLog("WARN: Bringing down VPN to try reconnecting", "WARN")
                     #bring the interface down and back up
                     os.system("wg-quick down wg0")
                     time.sleep(5)
-
         time.sleep(60)
