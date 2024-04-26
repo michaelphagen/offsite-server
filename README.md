@@ -33,3 +33,9 @@ EMAIL_FROM: The email address to send status updates from (generally the same as
 The wg0.conf file is a wireguard client configuration file that is used to connect the offsite server to the wireguard server. You can generate this file using the wireguard server's web interface or by using the `wg` command line tool. The file should be placed in the ./wireguard directory and should be named wg0.conf. 
 
 If you're not sure how to generate this file and haven't set up a wireguard server yet, I recommend using [wg-easy](https://github.com/wg-easy/wg-easy), which is a simple web interface for setting up a wireguard server. You can download the wg0.conf file from the web interface after setting up the server.
+
+## Donate
+
+If you find this project useful and you would like to donate toward on-going development you can use the link below. Any and all donations are much appreciated!
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/michaelphagen)
