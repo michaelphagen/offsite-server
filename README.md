@@ -18,15 +18,18 @@ Basically, [Tailscale](https://tailscale.com/) just for me.
 ## offsite-server.conf
 
 The offsite-server.conf file is a simple configuration file that contains the following fields:
-HOME_IP: An IP address or host on the local network that is used to check if the offsite server's wireguard connection is up
-INTERNET_IP: An IP address or host on the internet that is used to check if the offsite server is connected to the internet
-EMAIL_USERNAME: The username for the email account used to send status updates
-EMAIL_PASSWORD: The password for the email account used to send status updates (if using gmail, you should use an [app password](https://support.google.com/accounts/answer/185833?hl=en))
-EMAIL_SMTP: The smtp server for the email account used to send status updates (smtp.gmail.com for gmail)
-EMAIL_PORT: The port for the smtp server for the email account used to send status updates (587 for gmail if using TLS)
-EMAIL_TLS: Whether or not to use TLS for the smtp server for the email account used to send status updates (true for gmail)
-EMAIL_TO: The email address to send status updates to
-EMAIL_FROM: The email address to send status updates from (generally the same as EMAIL_USERNAME)
+
+| Variable | Description |
+| :-- | :-- |
+| HOME_IP | An IP address or host on the local network that is used to check if the offsite server's wireguard connection is up |
+| INTERNET_IP | An IP address or host on the internet that is used to check if the offsite server is connected to the internet |
+| EMAIL_USERNAME | The username for the email account used to send status updates |
+| EMAIL_PASSWORD | The password for the email account used to send status updates (if using gmail, you should use an [app password](https://support.google.com/accounts/answer/185833?hl=en)) |
+| EMAIL_SMTP | The smtp server for the email account used to send status updates (smtp.gmail.com for gmail) |
+| EMAIL_PORT | The port for the smtp server for the email account used to send status updates (587 for gmail if using TLS) |
+| EMAIL_TLS | Whether or not to use TLS for the smtp server for the email account used to send status updates (true for gmail) |
+| EMAIL_TO | The email address to send status updates to |
+| EMAIL_FROM | The email address to send status updates from (generally the same as EMAIL_USERNAME) |
 
 ## wg0.conf
 
